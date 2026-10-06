@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fdd6e1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#160c11" media="(prefers-color-scheme: dark)">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TGB SHEIN">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<title>TGB SHEIN Price Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: phone-first single column. USD input on top, cost and selling price below, copy button floating at the bottom. */
+  /* Palette from the tgb. logo: blush ground #fdd6e1, hot pink #ed3a7b, ink dot #121012 */
+  :root {
+    --bg: #fff4f7;
+    --glow-a: #fdd6e1;
+    --glow-b: #ffe6ee;
+    --surface: #ffffff;
+    --surface-2: #fdeaf0;
+    --line: #f7d4df;
+    --fg: #121012;
+    --muted: #8a6b77;
+    --accent: #ed3a7b;
+    --accent-ink: #ffffff;
+    --accent-soft: #fdd6e1;
+    --focus: #121012;
+    --ok: #138a5b;
+    --shadow: 0 1px 2px rgba(120, 20, 60, .06), 0 16px 40px -20px rgba(237, 58, 123, .28);
+    --btn-shadow: 0 10px 24px -8px rgba(237, 58, 123, .55);
+    --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+    --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #160c11; --glow-a: #4a1530; --glow-b: #2a0f1d; --surface: #21131a; --surface-2: #2c1a23;
+      --line: #40262f; --fg: #fdeef3; --muted: #c19fae; --accent: #ff5c95; --accent-ink: #1a0710;
+      --accent-soft: #4a1530; --focus: #fdd6e1; --ok: #4fd69c;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 40px -20px rgba(0,0,0,.7);
+      --btn-shadow: 0 10px 24px -8px rgba(0,0,0,.7);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #160c11; --glow-a: #4a1530; --glow-b: #2a0f1d; --surface: #21131a; --surface-2: #2c1a23;
+    --line: #40262f; --fg: #fdeef3; --muted: #c19fae; --accent: #ff5c95; --accent-ink: #1a0710;
+    --accent-soft: #4a1530; --focus: #fdd6e1; --ok: #4fd69c;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 40px -20px rgba(0,0,0,.7);
+    --btn-shadow: 0 10px 24px -8px rgba(0,0,0,.7);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(30rem 22rem at 0% 0%, var(--glow-a), transparent 65%),
+      radial-gradient(28rem 22rem at 100% 70%, var(--glow-b), transparent 65%),
+      var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.45;
+    padding-inline: 16px;
+    padding-block: calc(20px + env(safe-area-inset-top, 0px)) 96px;
+    min-height: 100vh;
+  }
+
+  .app { width: 100%; max-width: 30rem; margin-inline: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+
+  header { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 44px; height: 44px; border-radius: 13px; flex: none; display: block; box-shadow: 0 0 0 1px var(--line); }
+  h1 { margin: 0; flex: 1; min-width: 0; font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: 1.375rem; letter-spacing: -.01em; }
+  .rate {
+    flex: none; padding: 6px 12px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--fg);
+    font-size: .75rem; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+
+  .label {
+    display: block; font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 8px 4px;
+  }
+
+  /* USD input */
+  .price-input {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 20px;
+    padding: 10px 8px 10px 18px;
+    box-shadow: var(--shadow);
+    transition: border-color .15s;
+  }
+  .price-input:focus-within { border-color: var(--accent); }
+  .price-input .cur { font-family: var(--font-display); font-weight: 700; color: var(--muted); font-size: 1.75rem; }
+  .price-input input {
+    flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--fg);
+    font-family: var(--font-display); font-weight: 700; font-size: 2.25rem; letter-spacing: -.01em;
+    font-variant-numeric: tabular-nums; padding: 4px 0;
+  }
+  .price-input input::placeholder { color: var(--line); }
+  .clear {
+    flex: none; width: 44px; height: 44px; border: 0; border-radius: 14px;
+    background: var(--surface-2); color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .clear svg { width: 18px; height: 18px; }
+  .hint { margin: 8px 4px 0; font-size: .8125rem; color: var(--accent); font-weight: 600; }
+
+  /* Results: selling price is the hero, cost and profit sit beside each other */
+  .result {
+    width: 100%; display: grid; gap: 4px; text-align: left;
+    padding: 18px 18px 16px; border-radius: 20px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+    transition: border-color .15s, transform .1s;
+  }
+  button.result:active:not(:disabled) { transform: scale(.985); }
+  button.result:disabled { cursor: default; }
+  .result .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .result .name { font-weight: 700; font-size: .875rem; color: var(--muted); }
+  .result .ic { color: var(--muted); display: grid; place-items: center; }
+  .result .ic svg { width: 18px; height: 18px; }
+  .result .amt { font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .result .amt small { font-family: var(--font-body); font-weight: 600; font-size: .875rem; color: var(--muted); margin-right: 4px; }
+  .result.sell { border: 2px solid var(--accent); }
+  .result.sell .amt { font-size: 2.5rem; line-height: 1.1; color: var(--accent); }
+  .result.done { border-color: var(--ok); }
+  .result.done .ic { color: var(--ok); }
+  .result .sub { font-size: .8125rem; color: var(--muted); }
+
+  .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .pair .result { padding: 14px 16px; }
+  .pair .amt { font-size: 1.375rem; }
+
+  /* Markup tiers, current one highlighted */
+  .tiers {
+    margin: 0; padding: 6px; list-style: none; border-radius: 18px; background: var(--surface-2);
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px;
+  }
+  .tiers li {
+    padding: 8px 6px; border-radius: 12px; text-align: center;
+    font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .tiers li b { display: block; font-size: .875rem; color: var(--fg); }
+  .tiers li.on { background: var(--surface); box-shadow: 0 0 0 2px var(--accent) inset; }
+  .tiers li.on b { color: var(--accent); }
+
+  /* Floating copy pill */
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    display: flex; justify-content: center; pointer-events: none;
+  }
+  .copy-all {
+    pointer-events: auto;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 48px; padding: 0 22px;
+    border: 0; border-radius: 999px;
+    background: var(--accent); color: var(--accent-ink);
+    box-shadow: var(--btn-shadow);
+    font-weight: 700; font-size: .9375rem;
+    transition: transform .1s, background .2s;
+  }
+  .copy-all:active:not(:disabled) { transform: scale(.98); }
+  .copy-all.done { background: var(--ok); }
+  .copy-all:disabled { opacity: .45; cursor: default; }
+  .copy-all svg { width: 18px; height: 18px; }
+
+  button { font: inherit; cursor: pointer; touch-action: manipulation; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  @media (hover: hover) {
+    button.result:hover:not(:disabled) { border-color: var(--accent); }
+    button.result:hover:not(:disabled) .ic { color: var(--accent); }
+    .copy-all:hover:not(:disabled) { filter: brightness(1.08); }
+  }
+  @media (max-width: 360px) {
+    .result.sell .amt { font-size: 2rem; }
+    .pair .amt { font-size: 1.125rem; }
+    .rate { padding: 5px 9px; }
+  }
+  @media (min-width: 600px) {
+    body { padding-block: 48px 110px; }
+    h1 { font-size: 1.5rem; }
+    .logo { width: 52px; height: 52px; border-radius: 15px; }
+    .price-input input { font-size: 2.75rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<main class="app">
+  <header>
+    <img class="logo" alt="tgb." width="44" height="44" src="apple-touch-icon.png">
+    <h1>SHEIN Price</h1>
+    <span class="rate" id="rateChip"></span>
+  </header>
+
+  <div>
+    <label class="label" for="usd">SHEIN price (USD)</label>
+    <div class="price-input">
+      <span class="cur">$</span>
+      <input id="usd" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0.00" value="12.99">
+      <button class="clear" id="clear" type="button" aria-label="Clear price">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <p class="hint" id="hint" hidden>Enter a dollar amount, like 12.99.</p>
+  </div>
+
+  <button class="result sell" id="sellBtn" type="button" aria-label="Copy selling price">
+    <span class="top"><span class="name">Selling price</span><span class="ic" id="sellIc"></span></span>
+    <span class="amt"><small>Rs.</small><span id="sellingPrice">–</span></span>
+  </button>
+
+  <div class="pair">
+    <button class="result" id="costBtn" type="button" aria-label="Copy cost price">
+      <span class="top"><span class="name">Cost</span><span class="ic" id="costIc"></span></span>
+      <span class="amt"><small>Rs.</small><span id="costPrice">–</span></span>
+    </button>
+    <div class="result">
+      <span class="top"><span class="name">Profit</span></span>
+      <span class="amt"><small>Rs.</small><span id="profit">–</span></span>
+    </div>
+  </div>
+
+  <div>
+    <span class="label">Markup by SHEIN price</span>
+    <ul class="tiers" id="tiers"></ul>
+  </div>
+</main>
+
+<div class="bar">
+  <button class="copy-all" id="copyBtn" type="button"></button>
+</div>
+
+<textarea id="fallback" aria-hidden="true" tabindex="-1" readonly style="position:fixed;left:-9999px;top:0;opacity:0"></textarea>
+
+<script>
+  // Change these when the dollar rate or shipping/handling factor changes
+  const RATE = 340;          // LKR per USD
+  const COST_FACTOR = 1.25;  // cost = USD x rate x 1.25
+
+  // Selling markup on cost, picked by the USD price (first match wins)
+  const TIERS = [
+    { over: 20,  markup: 1.125, label: 'Over $20' },
+    { over: 13,  markup: 1.139, label: '$13–20' },
+    { over: 9,   markup: 1.19,  label: '$9–13' },
+    { over: 6,   markup: 1.25,  label: '$6–9' },
+    { over: 3.5, markup: 1.3,   label: '$3.5–6' },
+    { over: -Infinity, markup: 1.425, label: 'Up to $3.5' },
+  ];
+
+  const ICON_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
+  const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  const $ = (id) => document.getElementById(id);
+  const input = $('usd');
+  const copyBtn = $('copyBtn');
+  const fmt = (n) => n.toLocaleString('en-US');
+  let result = null;
+
+  $('rateChip').textContent = '$1 = Rs. ' + RATE;
+  $('tiers').innerHTML = TIERS.map((t, i) =>
+    '<li data-i="' + i + '"><b>+' + Math.round((t.markup - 1) * 1000) / 10 + '%</b>' + t.label + '</li>'
+  ).join('');
+  $('sellIc').innerHTML = ICON_COPY;
+  $('costIc').innerHTML = ICON_COPY;
+
+  function calculate(raw) {
+    const cleaned = raw.replace(/[,\s$]/g, '');
+    if (cleaned === '') return { empty: true };
+    const usd = Number(cleaned);
+    if (!isFinite(usd) || usd <= 0) return { error: true };
+    const tier = TIERS.findIndex((t) => usd > t.over);
+    const cost = usd * RATE * COST_FACTOR;
+    const sell = cost * TIERS[tier].markup;
+    return { cost: Math.round(cost), sell: Math.round(sell), tier };
+  }
+
+  function setCopyLabel(state) {
+    const text = { idle: 'Copy selling price', done: 'Copied', fail: 'Copy blocked' }[state];
+    copyBtn.innerHTML = (state === 'done' ? ICON_CHECK : ICON_COPY) + text;
+    copyBtn.classList.toggle('done', state === 'done');
+  }
+
+  function render() {
+    const r = calculate(input.value);
+    const ok = !r.empty && !r.error;
+    result = ok ? r : null;
+    $('sellingPrice').textContent = ok ? fmt(r.sell) : '–';
+    $('costPrice').textContent = ok ? fmt(r.cost) : '–';
+    $('profit').textContent = ok ? fmt(r.sell - r.cost) : '–';
+    document.querySelectorAll('#tiers li').forEach((li) => li.classList.toggle('on', ok && +li.dataset.i === r.tier));
+    $('sellBtn').disabled = $('costBtn').disabled = copyBtn.disabled = !ok;
+    $('hint').hidden = !r.error;
+    try { localStorage.setItem('tgb-shein-usd', input.value); } catch (e) {}
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      const ta = $('fallback');
+      ta.value = text;
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      try { return document.execCommand('copy'); } catch (e2) { return false; }
+    }
+  }
+
+  function buzz() { try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} }
+
+  async function copyCard(btn, ic, value) {
+    if (!(await copyText(String(value)))) return;
+    buzz();
+    ic.innerHTML = ICON_CHECK;
+    btn.classList.add('done');
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { ic.innerHTML = ICON_COPY; btn.classList.remove('done'); }, 1400);
+  }
+
+  async function copySelling() {
+    if (!result) return;
+    input.blur(); // close the phone keyboard
+    const ok = await copyText(String(result.sell));
+    setCopyLabel(ok ? 'done' : 'fail');
+    if (ok) buzz();
+    clearTimeout(copyBtn._t);
+    copyBtn._t = setTimeout(() => setCopyLabel('idle'), 1600);
+  }
+
+  $('sellBtn').addEventListener('click', () => result && copyCard($('sellBtn'), $('sellIc'), result.sell));
+  $('costBtn').addEventListener('click', () => result && copyCard($('costBtn'), $('costIc'), result.cost));
+  $('clear').addEventListener('click', () => { input.value = ''; render(); input.focus(); });
+  copyBtn.addEventListener('click', copySelling);
+  input.addEventListener('input', render);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
+  input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
+
+  try {
+    const last = localStorage.getItem('tgb-shein-usd');
+    if (last) input.value = last;
+  } catch (e) {}
+  setCopyLabel('idle');
+  render();
+</script>
+</body>
+</html>
