@@ -8,7 +8,12 @@ from datetime import datetime, timezone
 
 URL = "https://www.nationstrust.com/exchange-rates"
 
-req = urllib.request.Request(URL, headers={"User-Agent": "Mozilla/5.0 (TGB price tool rate fetcher)"})
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+req = urllib.request.Request(URL, headers=HEADERS)
 page = urllib.request.urlopen(req, timeout=30).read().decode("utf-8", "replace")
 
 # "Rate: Rupees per unit of foreign currency as at <span ...>07 October 2026 02:10 PM</span>"
