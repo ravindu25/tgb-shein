@@ -269,7 +269,7 @@
 
 <script>
   // Change these when the dollar rate or shipping/handling factor changes
-  // LKR per USD comes from rate.json, which a GitHub job refreshes hourly from Nations Trust Bank
+  // LKR per USD comes from rate.json, refreshed from Nations Trust Bank by running update-rate.sh
   let RATE = null;
   const COST_FACTOR = 1.25;  // cost = USD x rate x 1.25
   const STALE_DAYS = 3;      // warn if the bank's rate is older than this
