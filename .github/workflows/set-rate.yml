@@ -1,0 +1,41 @@
+name: Set USD rate
+
+# Started by the iPhone shortcut, which reads the rate from Nations Trust Bank
+# (NTB blocks GitHub's servers, so GitHub can't fetch it itself).
+on:
+  workflow_dispatch:
+    inputs:
+      rate:
+        description: "NTB USD selling rate, e.g. 336.49"
+        required: true
+      as_at:
+        description: "Bank's 'as at' time, e.g. 07 October 2026 02:10 PM"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency: set-rate
+
+jobs:
+  set:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write rate.json
+        env:
+          RATE: ${{ inputs.rate }}
+          AS_AT: ${{ inputs.as_at }}
+        run: python3 scripts/set_rate.py
+      - name: Commit if changed
+        run: |
+          if [ -n "$(git status --porcelain rate.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+            git add rate.json
+            git commit -m "Update NTB USD rate"
+            git push
+          else
+            echo "Rate unchanged"
+          fi
