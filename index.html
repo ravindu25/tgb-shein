@@ -117,6 +117,20 @@
   .clear svg { width: 18px; height: 18px; }
   .hint { margin: 8px 4px 0; font-size: .8125rem; color: var(--accent); font-weight: 600; }
 
+  /* Live bank rate */
+  .rate-card {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: 16px; background: var(--surface-2);
+  }
+  .rate-card .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+  .rate-card.live .dot { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 22%, transparent); }
+  .rate-card.stale .dot, .rate-card.error .dot { background: var(--accent); }
+  .rate-card .src { font-size: .8125rem; font-weight: 700; }
+  .rate-card .when { font-size: .75rem; color: var(--muted); }
+  .rate-card.stale .when, .rate-card.error .when { color: var(--accent); font-weight: 600; }
+  .rate-card .val { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rate-card .val small { font-family: var(--font-body); font-weight: 600; font-size: .75rem; color: var(--muted); margin-right: 3px; }
+
   /* Results: selling price is the hero, cost and profit sit beside each other */
   .result {
     width: 100%; display: grid; gap: 4px; text-align: left;
@@ -219,6 +233,12 @@
     <p class="hint" id="hint" hidden>Enter a dollar amount, like 12.99.</p>
   </div>
 
+  <div class="rate-card" id="rateCard">
+    <span class="dot" aria-hidden="true"></span>
+    <span><span class="src" style="display:block">Nations Trust USD selling rate</span><span class="when" id="rateWhen" style="display:block">Loading today's rate…</span></span>
+    <span class="val"><small>Rs.</small><span id="rateVal">–</span></span>
+  </div>
+
   <button class="result sell" id="sellBtn" type="button" aria-label="Copy selling price">
     <span class="top"><span class="name">Selling price</span><span class="ic" id="sellIc"></span></span>
     <span class="amt"><small>Rs.</small><span id="sellingPrice">–</span></span>
@@ -249,8 +269,10 @@
 
 <script>
   // Change these when the dollar rate or shipping/handling factor changes
-  const RATE = 340;          // LKR per USD
+  // LKR per USD comes from rate.json, which a GitHub job refreshes hourly from Nations Trust Bank
+  let RATE = null;
   const COST_FACTOR = 1.25;  // cost = USD x rate x 1.25
+  const STALE_DAYS = 3;      // warn if the bank's rate is older than this
 
   // Selling markup on cost, picked by the USD price (first match wins)
   const TIERS = [
@@ -271,7 +293,7 @@
   const fmt = (n) => n.toLocaleString('en-US');
   let result = null;
 
-  $('rateChip').textContent = '$1 = Rs. ' + RATE;
+  $('rateChip').textContent = '$1 = Rs. …';
   $('tiers').innerHTML = TIERS.map((t, i) =>
     '<li data-i="' + i + '"><b>+' + Math.round((t.markup - 1) * 1000) / 10 + '%</b>' + t.label + '</li>'
   ).join('');
@@ -280,6 +302,7 @@
 
   function calculate(raw) {
     const cleaned = raw.replace(/[,\s$]/g, '');
+    if (RATE === null) return { empty: true };
     if (cleaned === '') return { empty: true };
     const usd = Number(cleaned);
     if (!isFinite(usd) || usd <= 0) return { error: true };
@@ -354,8 +377,44 @@
     const last = localStorage.getItem('tgb-shein-usd');
     if (last) input.value = last;
   } catch (e) {}
+  // "07 October 2026 02:10 PM" (Sri Lanka time) -> Date
+  function parseBankTime(str) {
+    const m = /(\d{1,2}) (\w+) (\d{4}) (\d{1,2}):(\d{2}) ?(AM|PM)/i.exec(str || '');
+    if (!m) return null;
+    const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    const mon = months.indexOf(m[2].slice(0, 3).toLowerCase());
+    if (mon < 0) return null;
+    let h = +m[4] % 12; if (m[6].toUpperCase() === 'PM') h += 12;
+    return new Date(Date.UTC(+m[3], mon, +m[1], h, +m[5]) - 330 * 60000); // UTC+5:30
+  }
+
+  async function loadRate() {
+    const card = $('rateCard');
+    try {
+      const res = await fetch('rate.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      if (!(data.rate > 0)) throw new Error('bad rate');
+      RATE = data.rate;
+      const rateText = RATE.toFixed(2);
+      $('rateVal').textContent = rateText;
+      $('rateChip').textContent = '$1 = Rs. ' + rateText;
+      const when = parseBankTime(data.bankAsAt);
+      const stale = when && (Date.now() - when) > STALE_DAYS * 864e5;
+      $('rateWhen').textContent = when
+        ? (stale ? 'Old rate · ' : 'As at ') + when.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Colombo' })
+        : 'As at ' + (data.bankAsAt || 'unknown time');
+      card.className = 'rate-card ' + (stale ? 'stale' : 'live');
+    } catch (e) {
+      $('rateWhen').textContent = "Couldn't load the bank rate. Check your connection and reload.";
+      card.className = 'rate-card error';
+    }
+    render();
+  }
+
   setCopyLabel('idle');
   render();
+  loadRate();
 </script>
 </body>
 </html>
